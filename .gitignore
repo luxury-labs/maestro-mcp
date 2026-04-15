@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.maestro-mcp/
+*.tsbuildinfo
+.DS_Store
