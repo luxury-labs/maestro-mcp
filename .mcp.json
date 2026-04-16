@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "maestro-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/Users/josuemartinez/Documents/luxury/maestro-mcp/dist/index.js"
+      ],
+      "env": {}
+    }
+  }
+}
