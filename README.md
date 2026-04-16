@@ -489,8 +489,12 @@ The project uses TypeScript 6.0 with ES modules. Run `npm run dev` for watch mod
 
 ## Acknowledgments
 
-[Maestro CLI](https://github.com/mobile-dev-inc/maestro) is developed by [mobile.dev](https://mobile.dev/) and licensed under Apache 2.0. This project is an independent MCP wrapper and is not affiliated with or endorsed by mobile.dev.
+This project was born from the need to automate mobile testing workflows using AI assistants. It wraps [Maestro CLI](https://github.com/mobile-dev-inc/maestro) — an excellent open-source mobile testing framework developed by [mobile.dev](https://mobile.dev/) and licensed under Apache 2.0.
+
+**Important:** maestro-mcp is an independent community project. We do not own, claim ownership of, or represent the Maestro brand in any way. "Maestro" in our project name refers solely to the CLI tool we integrate with. All credit for Maestro CLI goes to the mobile.dev team.
+
+If the Maestro team has any concerns about the use of their name, we are happy to rename this project. Reach out at jmartinez@autored.cl.
 
 ## License
 
-MIT — Luxury Labs
+MIT — [Luxury Labs](https://github.com/luxury-labs)
