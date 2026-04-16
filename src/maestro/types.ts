@@ -13,6 +13,26 @@ export interface MaestroFlowResult {
   output: string;
   errors: string[];
   screenshots: string[];
+  /** Directory where Maestro saved debug artifacts (logs, screenshots) */
+  debugDir?: string;
+  /** Base64-encoded failure screenshots collected from debug output */
+  failureScreenshots?: Array<{ path: string; base64: string }>;
+  /** Parsed debug report from Maestro's commands JSON — includes failed command details and UI hierarchy */
+  debugReport?: MaestroDebugReport;
+}
+
+/** Parsed summary of Maestro's commands JSON debug artifact */
+export interface MaestroDebugReport {
+  /** Commands that completed successfully */
+  completedCommands: string[];
+  /** The command that failed */
+  failedCommand?: {
+    description: string;
+    error: string;
+    duration: number;
+    /** Visible text elements extracted from UI hierarchy at time of failure */
+    visibleTexts: string[];
+  };
 }
 
 export interface MaestroCommand {
