@@ -1,9 +1,12 @@
-import { execFile, spawn } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { accessSync, constants } from "node:fs";
 import path from "node:path";
 import fs from "node:fs/promises";
 import type { MaestroDevice, MaestroFlowResult, DeviceInfo } from "./types.js";
+import { parseDebugOutputDir } from "../diagnostics/error-patterns.js";
+import { parseCommandsJson } from "../diagnostics/debug-report-parser.js";
+import { readScreenshotSafe } from "../utils/screenshot.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -52,8 +55,18 @@ export class MaestroCli {
     return stdout.trim();
   }
 
+  /** Detect platform from device ID: UUID = iOS, emulator-NNNN or other = Android */
+  static detectPlatform(deviceId: string): "android" | "ios" {
+    // iOS UDIDs are 36-char UUIDs (8-4-4-4-12)
+    return /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(deviceId)
+      ? "ios"
+      : "android";
+  }
+
   /** List connected devices/emulators via ADB + xcrun */
-  async listDevices(): Promise<MaestroDevice[]> {
+  async listDevices(
+    opts?: { includeShutdown?: boolean }
+  ): Promise<MaestroDevice[]> {
     const devices: MaestroDevice[] = [];
 
     // Android devices via ADB
@@ -78,25 +91,22 @@ export class MaestroCli {
 
     // iOS simulators via xcrun
     try {
-      const { stdout } = await execFileAsync("xcrun", [
-        "simctl",
-        "list",
-        "devices",
-        "booted",
-        "--json",
-      ]);
+      const args = ["simctl", "list", "devices", "--json"];
+      if (!opts?.includeShutdown) {
+        args.splice(3, 0, "booted");
+      }
+      const { stdout } = await execFileAsync("xcrun", args);
       const data = JSON.parse(stdout);
       for (const runtime of Object.keys(data.devices ?? {})) {
         for (const device of data.devices[runtime]) {
-          if (device.state === "Booted") {
-            devices.push({
-              id: device.udid,
-              name: device.name,
-              platform: "ios",
-              status: "connected",
-              isEmulator: true,
-            });
-          }
+          if (!opts?.includeShutdown && device.state !== "Booted") continue;
+          devices.push({
+            id: device.udid,
+            name: device.name,
+            platform: "ios",
+            status: device.state === "Booted" ? "connected" : "disconnected",
+            isEmulator: true,
+          });
         }
       }
     } catch {
@@ -172,15 +182,104 @@ export class MaestroCli {
       };
     } catch (err: unknown) {
       const error = err as { stdout?: string; stderr?: string; message?: string };
+      const output = error.stdout ?? "";
+      const errors = [error.stderr ?? error.message ?? "Unknown error"];
+
+      // Collect failure screenshots from Maestro debug output
+      const debugDir = parseDebugOutputDir([output, ...errors].join("\n"));
+      const failureScreenshots = await this.collectDebugScreenshots(debugDir);
+
+      // Parse Maestro's commands JSON for detailed failure info + UI hierarchy
+      const debugReport = debugDir ? await parseCommandsJson(debugDir) : null;
+
+      // Also capture live screenshot of current device state
+      const liveShot = await this.captureLiveFailureScreenshot(opts?.deviceId);
+      if (liveShot) {
+        failureScreenshots.push(liveShot);
+      }
+
       return {
         success: false,
         flowPath,
         duration: Date.now() - startTime,
-        output: error.stdout ?? "",
-        errors: [error.stderr ?? error.message ?? "Unknown error"],
+        output,
+        errors,
         screenshots,
+        debugDir: debugDir ?? undefined,
+        failureScreenshots: failureScreenshots.length > 0 ? failureScreenshots : undefined,
+        debugReport: debugReport ?? undefined,
       };
     }
+  }
+
+  /** Collect screenshot PNGs from Maestro's debug output directory */
+  private async collectDebugScreenshots(
+    debugDir: string | null
+  ): Promise<Array<{ path: string; base64: string }>> {
+    if (!debugDir) return [];
+
+    try {
+      const entries = await fs.readdir(debugDir);
+      const pngs = entries.filter((e) => e.endsWith(".png"));
+      const results: Array<{ path: string; base64: string }> = [];
+
+      for (const png of pngs.slice(0, 5)) {
+        // Limit to 5 screenshots
+        const fullPath = path.join(debugDir, png);
+        try {
+          const base64 = await readScreenshotSafe(fullPath);
+          results.push({ path: fullPath, base64 });
+        } catch {
+          // Skip corrupted/oversized screenshots
+        }
+      }
+
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
+  /** Take a live screenshot on failure for diagnosis */
+  private async captureLiveFailureScreenshot(
+    deviceId?: string
+  ): Promise<{ path: string; base64: string } | null> {
+    try {
+      const result = await this.takeScreenshot(`failure-live-${Date.now()}.png`, deviceId);
+      return result;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Minimum file size (bytes) for a valid screenshot.
+   * A black/empty screencap on a 1080x2400 display is ~10KB.
+   * Real content is typically >50KB. We use 20KB as threshold.
+   */
+  private static MIN_SCREENSHOT_SIZE = 20 * 1024;
+
+  /** Try `adb emu screenrecord screenshot` (emulator-only, saves to host). */
+  private async screenshotViaEmu(
+    adbDeviceArgs: string[],
+    destPath: string
+  ): Promise<void> {
+    await execFileAsync(ADB_BIN, [
+      ...adbDeviceArgs, "emu", "screenrecord", "screenshot", destPath,
+    ]);
+  }
+
+  /** Try `adb exec-out screencap -p` and validate result isn't empty. */
+  private async screenshotViaScreencap(
+    adbDeviceArgs: string[],
+    destPath: string
+  ): Promise<boolean> {
+    const { stdout } = await execFileAsync(ADB_BIN, [
+      ...adbDeviceArgs, "exec-out", "screencap", "-p",
+    ], { encoding: "buffer", maxBuffer: 20 * 1024 * 1024 });
+    await fs.writeFile(destPath, stdout);
+    const stat = await fs.stat(destPath);
+    return stat.size >= MaestroCli.MIN_SCREENSHOT_SIZE;
   }
 
   /** Take a screenshot of connected device */
@@ -192,40 +291,53 @@ export class MaestroCli {
 
     const screenshotName = filename ?? `screenshot-${Date.now()}.png`;
     const screenshotPath = path.join(this.screenshotDir, screenshotName);
+    const adbDeviceArgs = deviceId ? ["-s", deviceId] : [];
 
-    if (deviceId) {
-      // Use ADB for android or xcrun for iOS
+    let captured = false;
+
+    // 1. Try ADB screencap (works on real devices + most emulators)
+    try {
+      const valid = await this.screenshotViaScreencap(adbDeviceArgs, screenshotPath);
+      if (valid) {
+        captured = true;
+      } else {
+        // screencap returned a suspiciously small image (likely black).
+        // Fall back to emulator console screenshot.
+        try {
+          await this.screenshotViaEmu(adbDeviceArgs, screenshotPath);
+          captured = true;
+        } catch {
+          // emu command not available (real device) — keep the screencap result
+          captured = true;
+        }
+      }
+    } catch {
+      // ADB not available — try emulator console, then iOS
       try {
-        // Try ADB first
-        await execFileAsync(ADB_BIN, [
-          "-s", deviceId, "exec-out", "screencap", "-p",
-        ]);
-        const { stdout: screencap } = await execFileAsync(ADB_BIN, [
-          "-s", deviceId, "exec-out", "screencap", "-p",
-        ]);
-        await fs.writeFile(screenshotPath, screencap, "binary");
+        await this.screenshotViaEmu(adbDeviceArgs, screenshotPath);
+        captured = true;
       } catch {
         // Try xcrun simctl for iOS
+        const simTarget = deviceId ?? "booted";
         await execFileAsync("xcrun", [
-          "simctl", "io", deviceId, "screenshot", screenshotPath,
+          "simctl", "io", simTarget, "screenshot", screenshotPath,
         ]);
+        captured = true;
       }
-    } else {
-      // Default: use ADB
-      const { stdout } = await execFileAsync(ADB_BIN, [
-        "exec-out", "screencap", "-p",
-      ]);
-      await fs.writeFile(screenshotPath, stdout, "binary");
     }
 
-    const buffer = await fs.readFile(screenshotPath);
+    if (!captured) {
+      throw new Error("Failed to capture screenshot from any source");
+    }
+
+    const base64 = await readScreenshotSafe(screenshotPath);
     return {
       path: screenshotPath,
-      base64: buffer.toString("base64"),
+      base64,
     };
   }
 
-  /** Install an app on device */
+  /** Install an app on device. Supports .apk (Android), .app and .ipa (iOS). */
   async installApp(
     appPath: string,
     deviceId?: string
@@ -237,14 +349,14 @@ export class MaestroCli {
           : ["install", "-r", appPath];
         const { stdout } = await execFileAsync(ADB_BIN, args);
         return { success: true, output: stdout };
-      } else if (appPath.endsWith(".app")) {
-        const args = deviceId
-          ? ["simctl", "install", deviceId, appPath]
-          : ["simctl", "install", "booted", appPath];
-        const { stdout } = await execFileAsync("xcrun", args);
+      } else if (appPath.endsWith(".app") || appPath.endsWith(".ipa")) {
+        const simTarget = deviceId ?? "booted";
+        const { stdout } = await execFileAsync("xcrun", [
+          "simctl", "install", simTarget, appPath,
+        ]);
         return { success: true, output: stdout };
       }
-      return { success: false, output: `Unsupported app format: ${appPath}` };
+      return { success: false, output: `Unsupported format: ${appPath}. Use .apk (Android) or .app/.ipa (iOS)` };
     } catch (err: unknown) {
       const error = err as { message?: string };
       return { success: false, output: error.message ?? "Install failed" };
@@ -281,25 +393,26 @@ export class MaestroCli {
     appId: string,
     deviceId?: string
   ): Promise<{ success: boolean; output: string }> {
+    const platform = deviceId ? MaestroCli.detectPlatform(deviceId) : "android";
+
     try {
+      if (platform === "ios") {
+        const simTarget = deviceId ?? "booted";
+        const { stdout } = await execFileAsync("xcrun", [
+          "simctl", "terminate", simTarget, appId,
+        ]);
+        return { success: true, output: stdout };
+      }
+
       // Android
       const args = deviceId
         ? ["-s", deviceId, "shell", "am", "force-stop", appId]
         : ["shell", "am", "force-stop", appId];
       const { stdout } = await execFileAsync(ADB_BIN, args);
       return { success: true, output: stdout };
-    } catch {
-      try {
-        // iOS - terminate via simctl
-        const args = deviceId
-          ? ["simctl", "terminate", deviceId, appId]
-          : ["simctl", "terminate", "booted", appId];
-        const { stdout } = await execFileAsync("xcrun", args);
-        return { success: true, output: stdout };
-      } catch (err: unknown) {
-        const error = err as { message?: string };
-        return { success: false, output: error.message ?? "Stop failed" };
-      }
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      return { success: false, output: error.message ?? "Stop failed" };
     }
   }
 }

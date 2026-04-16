@@ -211,6 +211,41 @@ export async function cleanTempFlows(): Promise<number> {
   }
 }
 
+/**
+ * Adapt flow steps for a target platform.
+ * Maestro YAML is mostly platform-agnostic, but some actions need adjustment:
+ * - `back` doesn't exist on iOS → swipe from left edge (edge gesture)
+ * - `hideKeyboard` → tap outside text field on iOS (more reliable)
+ * - `pressKey: "Enter"` works on both, but key names may differ
+ */
+export function adaptStepsForPlatform(
+  steps: FlowStep[],
+  platform: "android" | "ios"
+): FlowStep[] {
+  if (platform === "android") return steps;
+
+  return steps.map((step) => {
+    switch (step.action) {
+      case "back":
+        // iOS has no back button — swipe from left edge
+        return {
+          action: "swipe" as const,
+          params: { from: "0%,50%", to: "80%,50%" },
+        };
+
+      case "hideKeyboard":
+        // iOS: tap on a neutral area above the keyboard
+        return {
+          action: "tapOn" as const,
+          params: { point: "50%,10%" },
+        };
+
+      default:
+        return step;
+    }
+  });
+}
+
 /** Generate a complete login test flow */
 export function generateLoginFlow(
   appId: string,
