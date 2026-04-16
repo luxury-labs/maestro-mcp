@@ -487,6 +487,10 @@ The project uses TypeScript 6.0 with ES modules. Run `npm run dev` for watch mod
 
 ---
 
+## Acknowledgments
+
+[Maestro CLI](https://github.com/mobile-dev-inc/maestro) is developed by [mobile.dev](https://mobile.dev/) and licensed under Apache 2.0. This project is an independent MCP wrapper and is not affiliated with or endorsed by mobile.dev.
+
 ## License
 
-MIT
+MIT — Luxury Labs
