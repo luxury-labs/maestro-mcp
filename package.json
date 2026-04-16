@@ -1,30 +1,77 @@
 {
   "name": "maestro-mcp",
-  "version": "0.1.0",
-  "description": "MCP server for mobile E2E testing via Maestro — auto-generates and runs YAML test flows on emulators and physical devices",
+  "version": "0.2.0",
+  "description": "MCP server for mobile E2E testing via Maestro — auto-generates and runs YAML test flows on Android emulators, iOS simulators, and physical devices",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./plugin": "./dist/plugins/types.js"
+  },
   "bin": {
     "maestro-mcp": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "test": "tsx src/__tests__/run.ts"
+    "prepublishOnly": "npm run build && npm test",
+    "test": "vitest run",
+    "test:legacy": "tsx src/__tests__/run.ts"
   },
-  "keywords": ["mcp", "maestro", "mobile-testing", "e2e", "emulator", "automation"],
-  "author": "jmartinez@autored.cl",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "maestro",
+    "mobile-testing",
+    "e2e",
+    "emulator",
+    "simulator",
+    "ios",
+    "android",
+    "react-native",
+    "swiftui",
+    "jetpack-compose",
+    "automation",
+    "testing",
+    "claude",
+    "ai-assistant"
+  ],
+  "author": "Luxury Labs <jmartinez@autored.cl>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luxurylabs/maestro-mcp.git"
+  },
+  "homepage": "https://github.com/luxurylabs/maestro-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/luxurylabs/maestro-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^25.6.0",
+    "sharp": "^0.34.5",
     "typescript": "^6.0.2",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },
+  "optionalDependencies": {
+    "web-tree-sitter": "^0.24.7",
+    "tree-sitter-wasms": "^0.1.13"
+  },
   "devDependencies": {
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.21.0"
+    "@vitest/coverage-v8": "^4.1.4",
+    "tsx": "^4.21.0",
+    "vitest": "^4.1.4"
   }
 }
