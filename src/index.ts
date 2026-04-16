@@ -22,10 +22,13 @@ async function main() {
     process.env.ANDROID_HOME = androidHome;
   }
 
-  const server = createServer();
+  const { server, pluginResults } = await createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("maestro-mcp server running on stdio");
+  if (pluginResults.loaded.length > 0) {
+    console.error(`  plugins: ${pluginResults.loaded.join(", ")}`);
+  }
 }
 
 main().catch((err) => {
