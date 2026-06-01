@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>maestro-mcp · The Playwright for mobile developers</title>
+<meta name="description" content="Drive iOS & Android apps the way Playwright drives the browser — one reliable, code-aware API. Agent-native (MCP), 32 tools, open source." />
+<meta property="og:title" content="maestro-mcp — The Playwright for mobile developers" />
+<meta property="og:description" content="One API to automate iOS & Android apps. Reliable, code-aware, agent-native. Open source (MIT)." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0b0f;
+    --bg-soft: #12141c;
+    --card: #161922;
+    --border: #242837;
+    --text: #e7e9ee;
+    --muted: #9aa0b0;
+    --accent: #6ee7b7;
+    --accent2: #60a5fa;
+    --accent3: #c084fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  /* glow background */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: 110px 0 80px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 800px; height: 600px;
+    background: radial-gradient(circle, rgba(110,231,183,0.14), transparent 60%),
+                radial-gradient(circle at 70% 40%, rgba(96,165,250,0.12), transparent 55%);
+    filter: blur(20px);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--muted);
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .kicker { font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: var(--accent); margin-bottom: 14px; text-transform: none; }
+  h1 {
+    font-size: clamp(38px, 6vw, 64px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 22px;
+    background: linear-gradient(180deg, #fff, #b9c0d4);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p.lead {
+    font-size: clamp(17px, 2.4vw, 21px);
+    color: var(--muted);
+    max-width: 660px; margin: 0 auto 38px;
+  }
+  .hero p.lead strong { color: var(--text); font-weight: 600; }
+  .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 13px 24px; border-radius: 10px;
+    font-weight: 600; font-size: 15px;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-2px); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #07120e; box-shadow: 0 8px 30px rgba(96,165,250,0.25); }
+  .btn-ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin: 56px 0; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px 18px; text-align: center; }
+  .stat .n { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; }
+  .stat .n.green { color: var(--accent); }
+  .stat .n.blue { color: var(--accent2); }
+  .stat .n.purple { color: var(--accent3); }
+  .stat .l { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  section { padding: 56px 0; }
+  .eyebrow { font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); font-weight: 600; margin-bottom: 12px; }
+  h2 { font-size: clamp(26px, 4vw, 36px); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 16px; }
+  .section-lead { color: var(--muted); max-width: 640px; margin-bottom: 36px; font-size: 17px; }
+
+  .grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 18px; }
+  .feature { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 26px; }
+  .feature .ico { font-size: 24px; margin-bottom: 14px; }
+  .feature h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .feature p { color: var(--muted); font-size: 15px; }
+
+  .flow { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 20px; }
+  .step { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 20px 16px; position: relative; }
+  .step .k { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--accent); margin-bottom: 8px; }
+  .step h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .step p { font-size: 13px; color: var(--muted); }
+
+  pre {
+    background: #0d0f16; border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px; overflow-x: auto; font-size: 13.5px; line-height: 1.7;
+    font-family: 'JetBrains Mono';
+  }
+  pre .c { color: #6b7280; }
+  pre .g { color: var(--accent); }
+  pre .b { color: var(--accent2); }
+
+  .install-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-top: 8px; }
+  .icard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+  .icard h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .icard pre { padding: 14px 16px; font-size: 12.5px; margin: 0; }
+  .icard .path { font-family: 'JetBrains Mono'; font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+  .install-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 28px; }
+  .add-cursor { display: inline-flex; align-items: center; gap: 8px; background: #fff; color: #111; padding: 11px 20px; border-radius: 9px; font-weight: 600; font-size: 14px; }
+  .add-cursor:hover { text-decoration: none; transform: translateY(-2px); }
+  .npm-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-soft); border: 1px solid var(--border); color: var(--muted); padding: 11px 18px; border-radius: 9px; font-size: 14px; font-family: 'JetBrains Mono'; }
+  .modes { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 8px; }
+  .mode { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .mode h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .mode p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+  .mode .tools { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mode .tools code { font-size: 11.5px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 3px 7px; color: var(--accent); }
+  .example { margin-top: 36px; }
+  .example .ask { background: var(--bg-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 14px 18px; font-style: italic; color: var(--text); margin-bottom: 16px; }
+  .platforms { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .chip { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 999px; padding: 7px 16px; font-size: 14px; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--border); padding: 40px 0 60px; text-align: center; color: var(--muted); font-size: 14px; }
+  footer a { color: var(--accent2); }
+  .note { font-size: 13px; color: var(--muted); margin-top: 30px; padding: 14px 18px; border: 1px dashed var(--border); border-radius: 10px; display: inline-block; }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2,1fr); }
+    .grid { grid-template-columns: 1fr; }
+    .flow { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge"><span class="dot"></span> Open source · MIT · v0.2 · in active development</span>
+    <div class="kicker">Think of it as the Playwright for mobile</div>
+    <h1>Let your AI agent<br/>drive real mobile apps</h1>
+    <p class="lead">
+      <strong>maestro-mcp</strong> is an MCP server with <strong>32 tools</strong> to automate
+      iOS &amp; Android apps — tap, type, swipe, assert, screenshot, deep-link — built on
+      <a href="https://maestro.mobile.dev/" target="_blank" rel="noopener">Maestro</a>.
+      Like Playwright for the web, it gives mobile <strong>one reliable, code-aware API</strong>,
+      native to AI agents through the Model Context Protocol.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#install">⬇ Install</a>
+      <a class="btn btn-ghost" href="https://github.com/luxury-labs/maestro-mcp" target="_blank" rel="noopener">★ View on GitHub</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="n green">32</div><div class="l">MCP tools</div></div>
+    <div class="stat"><div class="n blue">180</div><div class="l">passing tests</div></div>
+    <div class="stat"><div class="n purple">2</div><div class="l">platforms (iOS + Android)</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">API for both platforms</div></div>
+  </div>
+</div>
+
+<section id="what">
+  <div class="wrap">
+    <div class="eyebrow">What it is</div>
+    <h2>Automate mobile apps, not just test them</h2>
+    <p class="section-lead">
+      Like Playwright, it's a reliable automation layer for real apps — tap, type, swipe,
+      assert, navigate, set permissions, deep-link, mock location. Use it to drive flows,
+      reproduce bugs, capture screenshots, or build agents that operate your app. One API
+      for iOS and Android, code-aware and agent-native.
+    </p>
+    <div class="grid">
+      <div class="feature">
+        <div class="ico">📱</div>
+        <h3>Cross-platform by design</h3>
+        <p>One unified API for iOS simulators and Android emulators. The server auto-detects the platform from the device ID and adapts each step (e.g. iOS has no back button → swipe-from-edge gesture).</p>
+      </div>
+      <div class="feature">
+        <div class="ico">🔍</div>
+        <h3>Code-aware selectors</h3>
+        <p>Static analysis of Swift (SwiftUI/UIKit), Kotlin (Jetpack Compose), and Android layout XML maps your screens, buttons, and navigation — so automation targets real elements, not brittle guesses.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">⚙️</div>
+        <h3>Code, not YAML boilerplate</h3>
+        <p>Describe a flow as steps; the server compiles it to Maestro, runs it, and returns the result. Like Playwright's API over raw browser commands — built-in templates for login, navigation, search, and forms.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">🩺</div>
+        <h3>Rich failure diagnostics</h3>
+        <p>When a flow fails you get the UI hierarchy, failure screenshots inline, and pattern-based diagnostics (Metro, element-not-found, crash, timeout, network) with concrete fix suggestions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="eyebrow">How it works</div>
+    <h2>From source code to a driven app</h2>
+    <div class="flow">
+      <div class="step"><div class="k">01 · scan</div><h4>Scan project</h4><p>Detect platform, app IDs, screens and UI elements from native source.</p></div>
+      <div class="step"><div class="k">02 · target</div><h4>Map selectors</h4><p>Turn discovered screens into reliable element targets for automation.</p></div>
+      <div class="step"><div class="k">03 · drive</div><h4>Run the flow</h4><p>Compile steps to Maestro, execute on a real device or emulator.</p></div>
+      <div class="step"><div class="k">04 · observe</div><h4>Inspect</h4><p>Screenshots, UI hierarchy, and diagnostics on every step.</p></div>
+    </div>
+
+    <div style="margin-top:40px">
+      <h3 style="font-size:16px;margin-bottom:12px;color:var(--muted);font-weight:600">Add it to any MCP client</h3>
+      <pre><span class="c">// .mcp.json</span>
+{
+  <span class="b">"mcpServers"</span>: {
+    <span class="b">"maestro-mcp"</span>: {
+      <span class="b">"command"</span>: <span class="g">"node"</span>,
+      <span class="b">"args"</span>: [<span class="g">"dist/index.js"</span>]
+    }
+  }
+}</pre>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="eyebrow">Install</div>
+    <h2>One command, every client</h2>
+    <p class="section-lead">
+      No clone, no build. Runs from npm via <code>npx</code> — point any MCP client at the same command.
+      Works in Claude Code, Cursor, Windsurf, Claude Desktop, VS Code, and Codex CLI.
+    </p>
+
+    <div class="install-cta">
+      <a class="add-cursor" href="cursor://anysphere.cursor-deeplink/mcp/install?name=maestro&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBsdXh1cnlsYWJzL21hZXN0cm8tbWNwIl19">➜ Add to Cursor</a>
+      <a class="npm-badge" href="https://www.npmjs.com/package/@luxurylabs/maestro-mcp" target="_blank" rel="noopener">📦 npm i -g @luxurylabs/maestro-mcp</a>
+    </div>
+
+    <div class="install-grid">
+      <div class="icard">
+        <h3>⌨️ Claude Code</h3>
+        <pre>claude mcp add maestro -- \
+  npx -y @luxurylabs/maestro-mcp</pre>
+      </div>
+      <div class="icard">
+        <h3>🖱️ Cursor</h3>
+        <div class="path">~/.cursor/mcp.json</div>
+        <pre>{ <span class="b">"mcpServers"</span>: { <span class="b">"maestro"</span>: {
+  <span class="b">"command"</span>: <span class="g">"npx"</span>,
+  <span class="b">"args"</span>: [<span class="g">"-y"</span>, <span class="g">"@luxurylabs/maestro-mcp"</span>] } } }</pre>
+      </div>
+      <div class="icard">
+        <h3>🌊 Windsurf</h3>
+        <div class="path">~/.codeium/windsurf/mcp_config.json</div>
+        <pre>{ <span class="b">"mcpServers"</span>: { <span class="b">"maestro"</span>: {
+  <span class="b">"command"</span>: <span class="g">"npx"</span>,
+  <span class="b">"args"</span>: [<span class="g">"-y"</span>, <span class="g">"@luxurylabs/maestro-mcp"</span>] } } }</pre>
+      </div>
+      <div class="icard">
+        <h3>🖥️ Codex CLI <span style="color:var(--muted);font-weight:400">· TOML</span></h3>
+        <div class="path">~/.codex/config.toml</div>
+        <pre>[mcp_servers.maestro]
+<span class="b">command</span> = <span class="g">"npx"</span>
+<span class="b">args</span> = [<span class="g">"-y"</span>, <span class="g">"@luxurylabs/maestro-mcp"</span>]</pre>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin-top:18px">
+      Also: Claude Desktop &amp; VS Code (Copilot) — see the
+      <a href="https://github.com/luxury-labs/maestro-mcp#install" target="_blank" rel="noopener">full install guide</a>.
+      Host needs Maestro CLI + Android/iOS SDKs; the built-in <code>setup</code> tool checks and installs them.
+    </p>
+  </div>
+</section>
+
+<section id="modes">
+  <div class="wrap">
+    <div class="eyebrow">Ways to use it</div>
+    <h2>One toolkit, many modes</h2>
+    <p class="section-lead">
+      Automation, not only test execution. The same 32 tools cover autonomous QA,
+      scripted flows, interactive driving, and clean screenshot capture.
+    </p>
+    <div class="modes">
+      <div class="mode">
+        <h3>🤖 Autonomous QA</h3>
+        <p>Describe a goal in plain English; the agent plans, drives, and self-corrects.</p>
+        <div class="tools"><code>scan_project</code><code>suggest_flows</code><code>generate_and_run_flow</code></div>
+      </div>
+      <div class="mode">
+        <h3>📜 Scripted flows</h3>
+        <p>Pass an explicit step array for a deterministic, repeatable flow.</p>
+        <div class="tools"><code>generate_and_run_flow</code><code>run_flow</code></div>
+      </div>
+      <div class="mode">
+        <h3>🕹️ Interactive driving</h3>
+        <p>Issue one action at a time and inspect between steps.</p>
+        <div class="tools"><code>tap</code><code>input_text</code><code>swipe</code><code>take_screenshot</code></div>
+      </div>
+      <div class="mode">
+        <h3>🔍 Code-aware test gen</h3>
+        <p>Generate flows from your real Swift/Kotlin/XML, targeting exact labels &amp; IDs.</p>
+        <div class="tools"><code>analyze_source_file</code><code>scan_project</code></div>
+      </div>
+      <div class="mode">
+        <h3>📸 Screenshot studio</h3>
+        <p>Boot a device, fix the status bar to 9:41, capture clean App Store shots.</p>
+        <div class="tools"><code>boot_device</code><code>override_status_bar</code></div>
+      </div>
+      <div class="mode">
+        <h3>🐞 Bug reproduction</h3>
+        <p>Replay a flow, set permissions/location/deep-links, capture failure artifacts.</p>
+        <div class="tools"><code>set_permissions</code><code>set_location</code><code>open_url</code></div>
+      </div>
+    </div>
+
+    <div class="example">
+      <h3 style="font-size:16px;margin-bottom:12px;color:var(--muted);font-weight:600">Example: log in and open Settings</h3>
+      <div class="ask">"Open com.example.app, log in with test@mail.com / secret123, then go to Settings."</div>
+      <pre><span class="c">// the agent calls generate_and_run_flow</span>
+{
+  <span class="b">"appId"</span>: <span class="g">"com.example.app"</span>,
+  <span class="b">"name"</span>: <span class="g">"login-and-settings"</span>,
+  <span class="b">"steps"</span>: [
+    { <span class="b">"action"</span>: <span class="g">"launchApp"</span>, <span class="b">"params"</span>: { <span class="b">"appId"</span>: <span class="g">"com.example.app"</span> } },
+    { <span class="b">"action"</span>: <span class="g">"tapOn"</span>,     <span class="b">"params"</span>: { <span class="b">"text"</span>: <span class="g">"Email"</span> } },
+    { <span class="b">"action"</span>: <span class="g">"inputText"</span>, <span class="b">"params"</span>: { <span class="b">"text"</span>: <span class="g">"test@mail.com"</span> } },
+    { <span class="b">"action"</span>: <span class="g">"tapOn"</span>,     <span class="b">"params"</span>: { <span class="b">"text"</span>: <span class="g">"Log in"</span> } },
+    { <span class="b">"action"</span>: <span class="g">"tapOn"</span>,     <span class="b">"params"</span>: { <span class="b">"text"</span>: <span class="g">"Settings"</span> } },
+    { <span class="b">"action"</span>: <span class="g">"assertVisible"</span>, <span class="b">"params"</span>: { <span class="b">"text"</span>: <span class="g">"Settings"</span> } }
+  ]
+}</pre>
+      <p style="color:var(--muted);font-size:14px;margin-top:14px">
+        More walkthroughs — code-aware test gen, App Store screenshots, permission &amp; deep-link testing —
+        in the <a href="https://github.com/luxury-labs/maestro-mcp#usage-examples" target="_blank" rel="noopener">README usage guide</a>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <div class="eyebrow">Under the hood</div>
+    <h2>Built with</h2>
+    <div class="platforms">
+      <span class="chip">TypeScript</span>
+      <span class="chip">@modelcontextprotocol/sdk</span>
+      <span class="chip">Maestro CLI</span>
+      <span class="chip">tree-sitter</span>
+      <span class="chip">sharp</span>
+      <span class="chip">zod</span>
+      <span class="chip">vitest · 180 tests</span>
+      <span class="chip">ADB · xcrun simctl</span>
+    </div>
+    <div class="note">
+      Status: <strong>v0.2 — functional beta, in active development.</strong>
+      Solid tested core (180 unit tests, CI on every push). Pre-1.0: the tool API may still change.
+      Contributions and feedback welcome.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      <a href="https://github.com/luxury-labs/maestro-mcp" target="_blank" rel="noopener">github.com/luxury-labs/maestro-mcp</a>
+      · MIT License · Built on <a href="https://maestro.mobile.dev/" target="_blank" rel="noopener">Maestro</a> (Apache 2.0)
+    </p>
+    <p style="margin-top:8px">The Playwright for mobile developers.</p>
+  </div>
+</footer>
+
+</body>
+</html>

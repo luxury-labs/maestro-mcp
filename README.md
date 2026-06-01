@@ -1,11 +1,14 @@
 # maestro-mcp
 
+[![npm](https://img.shields.io/npm/v/@luxurylabs/maestro-mcp?logo=npm&color=cb3837)](https://www.npmjs.com/package/@luxurylabs/maestro-mcp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MCP](https://img.shields.io/badge/MCP-1.29-blueviolet)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
-**Let your AI assistant drive real phones.** An MCP server that gives any AI assistant full control over Android emulators and iOS simulators through [Maestro CLI](https://maestro.mobile.dev/) -- generating, running, and diagnosing mobile E2E tests from natural language.
+**Let your AI assistant drive real phones.** An MCP server that gives any AI assistant full control over Android emulators and iOS simulators through [Maestro CLI](https://maestro.mobile.dev/) -- generating, running, and diagnosing mobile flows from natural language.
+
+> **The way to think about it:** Playwright gave the web one reliable, code-first API to drive any browser. maestro-mcp brings that same feel to mobile -- one code-aware API to automate iOS & Android apps -- and makes it native to AI agents through MCP.
 
 ---
 
@@ -19,34 +22,106 @@ This works with **any MCP-compatible client** -- Claude Code, Claude Desktop, Cu
 
 ---
 
-## Quick Start
+## Usage Modes
 
-### 1. Install and build
+maestro-mcp is mobile automation, not only test execution. The same 32 tools cover several ways of working:
+
+| Mode | What you do | Tools you'll use |
+|------|-------------|------------------|
+| **Autonomous QA** | Describe a goal in plain English; the agent plans, drives, and self-corrects. | `scan_project`, `suggest_flows`, `generate_and_run_flow` |
+| **Scripted flows** | Pass an explicit step array for a deterministic, repeatable flow. | `generate_and_run_flow`, `run_flow` |
+| **Interactive driving** | Issue one action at a time and inspect between steps. | `tap`, `input_text`, `swipe`, `assert_visible`, `take_screenshot` |
+| **Code-aware test gen** | Generate flows from your real Swift/Kotlin/XML, targeting exact labels & IDs. | `analyze_source_file`, `scan_project`, `suggest_flows` |
+| **Screenshot studio** | Boot a device, fix the status bar (9:41, full signal), capture clean shots. | `boot_device`, `override_status_bar`, `take_screenshot` |
+| **Bug reproduction** | Replay a flow, set permissions/location/deep-links, capture failure artifacts. | `set_permissions`, `set_location`, `open_url`, `run_flow` |
+
+See [Usage Examples](#usage-examples) below for a concrete walkthrough of each.
+
+---
+
+## Install
+
+No clone, no build. The server runs straight from npm via `npx` — point any MCP client at the same command.
+
+> **Prerequisite (host machine):** the server drives Maestro, so the host needs **Maestro CLI** and the platform SDKs (Android `adb` / Xcode `simctl`). Don't have them? Install the server first, then ask your assistant to run the built-in `setup` and `install_tool` (see [Verify the environment](#verify-the-environment)).
+
+### Claude Code
 
 ```bash
-git clone https://github.com/your-org/maestro-mcp.git
-cd maestro-mcp
-npm install
-npm run build
+claude mcp add maestro -- npx -y @luxurylabs/maestro-mcp
 ```
 
-### 2. Configure your MCP client
+### Cursor
 
-Add to your `.mcp.json` (Claude Code) or equivalent MCP configuration:
+Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project):
 
 ```json
 {
   "mcpServers": {
-    "maestro-mcp": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/maestro-mcp/dist/index.js"]
-    }
+    "maestro": { "command": "npx", "args": ["-y", "@luxurylabs/maestro-mcp"] }
   }
 }
 ```
 
-### 3. Verify the environment
+### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "maestro": { "command": "npx", "args": ["-y", "@luxurylabs/maestro-mcp"] }
+  }
+}
+```
+
+### Claude Desktop
+
+Add to `claude_desktop_config.json` (Settings → Developer → Edit Config):
+
+```json
+{
+  "mcpServers": {
+    "maestro": { "command": "npx", "args": ["-y", "@luxurylabs/maestro-mcp"] }
+  }
+}
+```
+
+### VS Code (GitHub Copilot)
+
+Add to `.vscode/mcp.json` — note the key is `servers`, not `mcpServers`:
+
+```json
+{
+  "servers": {
+    "maestro": { "type": "stdio", "command": "npx", "args": ["-y", "@luxurylabs/maestro-mcp"] }
+  }
+}
+```
+
+### Codex CLI (OpenAI)
+
+Add to `~/.codex/config.toml` — TOML, not JSON:
+
+```toml
+[mcp_servers.maestro]
+command = "npx"
+args = ["-y", "@luxurylabs/maestro-mcp"]
+```
+
+### From source (development)
+
+```bash
+git clone https://github.com/luxury-labs/maestro-mcp.git
+cd maestro-mcp
+npm install
+npm run build
+# then point your client at: node /absolute/path/to/maestro-mcp/dist/index.js
+```
+
+---
+
+## Verify the environment
 
 Ask your AI assistant:
 
