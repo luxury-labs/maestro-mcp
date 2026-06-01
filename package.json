@@ -57,7 +57,7 @@
     "url": "https://github.com/luxury-labs/maestro-mcp/issues"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
