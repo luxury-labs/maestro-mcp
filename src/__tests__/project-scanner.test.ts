@@ -4,12 +4,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
-const TMP = path.join(os.tmpdir(), "maestro-mcp-scanner-tests");
-
 async function createProject(
   structure: Record<string, string>
 ): Promise<string> {
-  const dir = path.join(TMP, `proj-${Date.now()}`);
+  // mkdtemp guarantees a unique dir; Date.now() collided when tests ran in the
+  // same millisecond, leaking files (e.g. pubspec.yaml) across projects.
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "maestro-mcp-scanner-"));
   for (const [filePath, content] of Object.entries(structure)) {
     const full = path.join(dir, filePath);
     await fs.mkdir(path.dirname(full), { recursive: true });
